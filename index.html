@@ -177,7 +177,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2021-10-16 15:54:04 / 修改时间：16:47:07" itemprop="dateCreated datePublished" datetime="2021-10-16T15:54:04+08:00">2021-10-16</time>
+              <time title="创建时间：2021-10-16 15:54:04 / 修改时间：17:21:09" itemprop="dateCreated datePublished" datetime="2021-10-16T15:54:04+08:00">2021-10-16</time>
             </span>
 
           
@@ -211,7 +211,7 @@ D_{\mathrm{KL}}(P \| Q)=\int_{-\infty}^{\infty} p(x) \log \left(\frac{p(x)}{q(x)
 <h2 id="vae">VAE</h2>
 <h3 id="architecture">Architecture</h3>
 <p>VAE是一种生成式模型；它的训练过程受到正则化，使其<strong>hidden空间具有连续、完备的性质</strong></p>
-<p><img src="https://miro.medium.com/max/1400/1*Q5dogodt3wzKKktE0v3dMQ@2x.png" alt="img" style="zoom: 67%;" /></p>
+<p><img src="\imgs\VAE\1.png" style="zoom:67%;" /></p>
 <p>VAE由一个encoder和一个decoder组成；其训练过程是：</p>
 <ul>
 <li>对于输入数据<span class="math inline">\(x\)</span>, encoder将其编码成一个概率分布<span class="math inline">\(p(z|x)\)</span>，</li>
@@ -242,7 +242,7 @@ q_{x}(z) \equiv \mathcal{N}(g(x), h(x)) \quad g \in G \quad h \in H
 \end{aligned}
 \]</span> 从倒数第二项可以看出，这个衡量标准既考虑了最大化后验（充分考虑数据<span class="math inline">\(x\)</span>带来的信息），又考虑了最大化先验（充分考虑<span class="math inline">\(z\)</span>）带来的信息；它们也对应了loss的第一项和第二项。</p>
 <p>完整的网络结构：</p>
-<p><img src="https://miro.medium.com/max/2000/1*eRcdr8gczweQHk--1pZF9A@2x.png" alt="img" style="zoom: 50%;" /></p>
+<p><img src="\imgs\VAE\2.png" style="zoom:50%;" /></p>
 
       
     </div>
