@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cyanbx.github.io","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="变分自动编码器（VAE）是一种生成式模型，由神经网络构建而成，并可以通过SGD进行训练；特点是运算速度快，需要的assumption弱。 Preliminaries Generative Model 建模data variable \(X\) 和hidden variable（或者label）\(Z\)联合概率分布 \(P(X, Z)\) 的模型。 最早源于统计分类问题。对于data va">
+<meta property="og:type" content="article">
+<meta property="og:title" content="VAE">
+<meta property="og:url" content="https://cyanbx.github.io/2021/10/16/VAE/index.html">
+<meta property="og:site_name" content="Cyanbox">
+<meta property="og:description" content="变分自动编码器（VAE）是一种生成式模型，由神经网络构建而成，并可以通过SGD进行训练；特点是运算速度快，需要的assumption弱。 Preliminaries Generative Model 建模data variable \(X\) 和hidden variable（或者label）\(Z\)联合概率分布 \(P(X, Z)\) 的模型。 最早源于统计分类问题。对于data va">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://miro.medium.com/max/1400/1*Q5dogodt3wzKKktE0v3dMQ@2x.png">
+<meta property="og:image" content="https://miro.medium.com/max/2000/1*eRcdr8gczweQHk--1pZF9A@2x.png">
+<meta property="article:published_time" content="2021-10-16T07:54:04.000Z">
+<meta property="article:modified_time" content="2021-10-16T08:14:56.933Z">
+<meta property="article:author" content="Yongqi Wang">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://miro.medium.com/max/1400/1*Q5dogodt3wzKKktE0v3dMQ@2x.png">
+
+<link rel="canonical" href="https://cyanbx.github.io/2021/10/16/VAE/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>VAE | Cyanbox</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Cyanbox</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">As the moon shining on the river</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://cyanbx.github.io/2021/10/16/VAE/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Yongqi Wang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Cyanbox">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          VAE
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2021-10-16 15:54:04 / Modified: 16:14:56" itemprop="dateCreated datePublished" datetime="2021-10-16T15:54:04+08:00">2021-10-16</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>变分自动编码器（VAE）是一种<strong>生成式模型</strong>，由神经网络构建而成，并可以通过SGD进行训练；特点是运算速度快，需要的assumption弱。</p>
+<h2 id="preliminaries">Preliminaries</h2>
+<h3 id="generative-model">Generative Model</h3>
+<p>建模data variable <span class="math inline">\(X\)</span> 和hidden variable（或者label）<span class="math inline">\(Z\)</span>联合概率分布 <span class="math inline">\(P(X, Z)\)</span> 的模型。</p>
+<p>最早源于统计分类问题。对于data variable <span class="math inline">\(X\)</span> 和label <span class="math inline">\(Y\)</span>，数据统计分类模型可以分成两类：</p>
+<ul>
+<li>生成式模型：建模联合概率分布 <span class="math inline">\(P(X, Y)\)</span>；</li>
+<li>判别式模型：建模条件概率分布<span class="math inline">\(P(Y|X=x)\)</span>；</li>
+</ul>
+<p>判别式模型可以直接给出条件概率，而生成式模型需要将观察到的变量带入到不同的<span class="math inline">\(y\)</span>中，选出概率最大的那一个。</p>
+<p>生成式模型的另一个作用是在给定的数据分布上采样。比如GAN，可以用于hidden和data的分布没有明确关系的情况下对data进行采样。</p>
+<h3 id="kl-divergence">KL-Divergence</h3>
+<p>即相对熵，用于描述两个概率分布之间的不相似性；公式为： <span class="math display">\[
+D_{\mathrm{KL}}(P \| Q)=\int_{-\infty}^{\infty} p(x) \log \left(\frac{p(x)}{q(x)}\right) d x
+\]</span></p>
+<h3 id="variational-inference">Variational Inference</h3>
+<p>用于处理贝叶斯推断问题中后验难以计算的问题。其基本思想是，使用一个参数化的概率分布函数族来近似待处理的分布，然后通过最小化KL散度来优化参数，从而将难以处理的分布函数转化成一个优化问题。</p>
+<h2 id="vae">VAE</h2>
+<h3 id="architecture">Architecture</h3>
+<p>VAE是一种生成式模型；它的训练过程受到正则化，使其<strong>hidden空间具有连续、完备的性质</strong></p>
+<p><img src="https://miro.medium.com/max/1400/1*Q5dogodt3wzKKktE0v3dMQ@2x.png" alt="img" style="zoom: 67%;" /></p>
+<p>VAE由一个encoder和一个decoder组成；其训练过程是：</p>
+<ul>
+<li>对于输入数据<span class="math inline">\(x\)</span>, encoder将其编码成一个概率分布<span class="math inline">\(p(z|x)\)</span>，</li>
+<li>从该分布中采样<span class="math inline">\(z\)</span>，并通过decoder解码成<span class="math inline">\(d(z)\)</span></li>
+<li>计算loss并更新参数；loss由两部分组成：
+<ul>
+<li><span class="math inline">\(d(z)\)</span>和<span class="math inline">\(x\)</span>的reconstruction loss</li>
+<li><span class="math inline">\(X\)</span>编码的得到的概率分布和标准正态分布的KL散度；这项loss能使得hidden空间<span class="math inline">\(z\)</span>形成标准正态分布</li>
+</ul></li>
+</ul>
+<h3 id="probablistic-prospective">Probablistic Prospective</h3>
+<p>根据贝叶斯公式： <span class="math display">\[
+p(z \mid x)=\frac{p(x \mid z) p(z)}{p(x)}=\frac{p(x \mid z) p(z)}{\int p(x \mid u) p(u) d u}
+\]</span> 左边的后验即为encoder，右边分子上，先验<span class="math inline">\(p(z)\)</span>为标准正态分布；似然（即decoder）<span class="math inline">\(p(x|z)\)</span>是一个以<span class="math inline">\(f(z)\)</span>为中心的正态分布（<span class="math inline">\(f\)</span>未知），公式为： <span class="math display">\[
+\begin{aligned}
+&amp;p(z) \equiv \mathcal{N}(0, I) \\
+&amp;p(x \mid z) \equiv \mathcal{N}(f(z), c I) \quad f \in F \quad c&gt;0
+\end{aligned}
+\]</span> 由于分母的积分难以计算，使用Variational Inference的方法，使用<span class="math inline">\(q_x(z)\)</span>来近似后验<span class="math inline">\(p(z|x)\)</span>: <span class="math display">\[
+q_{x}(z) \equiv \mathcal{N}(g(x), h(x)) \quad g \in G \quad h \in H
+\]</span> 根据Variational Inference最小化KL散度的公式进行推导： <span class="math display">\[
+\begin{aligned}
+\left(g^{*}, h^{*}\right) &amp;=\underset{(g, h) \in G \times H}{\arg \min } K L\left(q_{x}(z), p(z \mid x)\right) \\
+&amp;=\underset{(g, h) \in G \times H}{\arg \min }\left(\mathbb{E}_{z \sim q_{x}}\left(\log q_{x}(z)\right)-\mathbb{E}_{z \sim q_{x}}\left(\log \frac{p(x \mid z) p(z)}{p(x)}\right)\right) \\
+&amp;=\underset{(g, h) \in G \times H}{\arg \min }\left(\mathbb{E}_{z \sim q_{x}}\left(\log q_{x}(z)\right)-\mathbb{E}_{z \sim q_{x}}(\log p(z))-\mathbb{E}_{z \sim q_{x}}(\log p(x \mid z))+\mathbb{E}_{z \sim q_{x}}(\log p(x))\right) \\
+&amp;=\underset{(g, h) \in G \times H}{\arg \max }\left(\mathbb{E}_{z \sim q_{x}}(\log p(x \mid z))-K L\left(q_{x}(z), p(z)\right)\right) \\
+&amp;=\underset{(g, h) \in G \times H}{\arg \max }\left(\mathbb{E}_{z \sim q_{x}}\left(-\frac{\|x-f(z)\|^{2}}{2 c}\right)-K L\left(q_{x}(z), p(z)\right)\right)
+\end{aligned}
+\]</span> 从倒数第二项可以看出，这个衡量标准既考虑了最大化后验（充分考虑数据<span class="math inline">\(x\)</span>带来的信息），又考虑了最大化先验（充分考虑<span class="math inline">\(z\)</span>）带来的信息；它们也对应了loss的第一项和第二项。</p>
+<p>完整的网络结构：</p>
+<p><img src="https://miro.medium.com/max/2000/1*eRcdr8gczweQHk--1pZF9A@2x.png" alt="img" style="zoom: 50%;" /></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#preliminaries"><span class="nav-number">1.</span> <span class="nav-text">Preliminaries</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#generative-model"><span class="nav-number">1.1.</span> <span class="nav-text">Generative Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kl-divergence"><span class="nav-number">1.2.</span> <span class="nav-text">KL-Divergence</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#variational-inference"><span class="nav-number">1.3.</span> <span class="nav-text">Variational Inference</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#vae"><span class="nav-number">2.</span> <span class="nav-text">VAE</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#architecture"><span class="nav-number">2.1.</span> <span class="nav-text">Architecture</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#probablistic-prospective"><span class="nav-number">2.2.</span> <span class="nav-text">Probablistic Prospective</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Yongqi Wang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">1</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Yongqi Wang</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
